@@ -13,5 +13,4 @@ Please download Eigen tarball from http://bitbucket.org/eigen/eigen/get/3.3.4.ta
 
 (**TLDR for Linux and Mac OS X users:** download and extract the tar ball, then create a symlink in /usr/local/include to the "Eigen" folder.)
 
-To build the program compile using "g++ -std=c++14 main.cpp spalib.cpp".
-To enable debugging functions,include "debug.h" and compile with "g++ -std=c++14 main.cpp spalib.cpp debug.cpp".
+To build the program compile using "g++ -std=c++14 m-length-Monte-Carlo.cpp".

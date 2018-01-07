@@ -50,7 +50,6 @@ double U;
 int size;
 
 double Sqr(cd z){return norm(z);}
-// double Sqr(double d){return pow(d,2);}
 
 void construct_h0(MatrixXcd &Mc)
 {
@@ -71,7 +70,7 @@ void sigma_generate(MatrixXd& randsigma, int i, long & idum)
   randsigma(i,2)= radius*u;
 }
 
-void matrixelement_sigmax(MatrixXcd &Mcx, MatrixXd randsigma, int size)
+void matrixelement_sigmax(MatrixXcd &Mcx, MatrixXd randsigma)
 {
   for(int row=0; row<size; row++)
   {
@@ -80,7 +79,7 @@ void matrixelement_sigmax(MatrixXcd &Mcx, MatrixXd randsigma, int size)
   }
 }
 
-void matrixelement_sigmay(MatrixXcd &Mcy, MatrixXd randsigma, int size)
+void matrixelement_sigmay(MatrixXcd &Mcy, MatrixXd randsigma)
 {
   for(int row=0; row<size; row++)
   {
@@ -89,7 +88,7 @@ void matrixelement_sigmay(MatrixXcd &Mcy, MatrixXd randsigma, int size)
   }
 }
 
-void matrixelement_sigmaz(MatrixXcd &Mcz, MatrixXd randsigma, int size)
+void matrixelement_sigmaz(MatrixXcd &Mcz, MatrixXd randsigma)
 {
   for(int row=0; row<size; row++)
     Mcz(row,row)= cd(randsigma(row,2),0);
@@ -118,12 +117,49 @@ string current_time_str(void)
   return str;
 }
 
-double find_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma, double U, ofstream& debug)
+double get_mu(double temperature, std::vector<double> v)
+{
+  sort (v.begin(), v.end());
+  double bisection_up_lim = v.back();
+  double bisection_low_lim = v.front();
+
+  double mu, no_of_electrons; int count=0;
+  double epsilon = 0.01;
+
+  for(; ;)
+  {
+    int it=0; no_of_electrons=0;  count++;
+    cout << "Loop:" << count << "\n----------------------\n"; if(count>10) exit(1);
+    mu = 0.5*(bisection_low_lim+bisection_up_lim) ;
+
+    while(no_of_electrons< double(size))
+    {
+      double fermi_func = 1/(exp((v[it]-mu)/temperature)+1); std::cout << fermi_func << '\t';
+      no_of_electrons += fermi_func;  it++;
+    }
+    if(abs(no_of_electrons-size) < epsilon){cout << "exact " << v[it] << ", mu=" << mu << " position= "<< it << " " <<  no_of_electrons << endl; return mu; break;}
+    else if(no_of_electrons > size+epsilon) { cout << "upper " << mu << " " << it-1 << " " <<  no_of_electrons << endl; bisection_up_lim=mu;}
+    else if(no_of_electrons < size-epsilon) { cout << "lower " << mu << " " << it-1 << " " << no_of_electrons << endl; bisection_low_lim=mu;}
+    cout << "\n-----------------------------\n";
+  }
+}
+
+double get_mu(double temperature, VectorXd v)
+{
+  vector<double> stdv (v.data(),v.data()+v.size());
+  return get_mu(temperature, stdv);
+}
+
+double debug_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma, ofstream& debug)
 {
   ComplexEigenSolver <MatrixXcd> ces;
   ces.compute(Mc);
-
   VectorXd sortedeivals=sortascending(ces.eigenvalues().real());
+
+  cout << sortedeivals.transpose() << endl;
+
+  double mu = get_mu(temperature,sortedeivals);
+  cout << "temperature = " << temperature << ", mu = " << mu << endl;
 
   // debug << endl;
   // debug << "Eigenvalues :\n "<< setprecision(3) << sortedeivals.transpose() << endl;
@@ -131,12 +167,12 @@ double find_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma, do
 
   double free_energy = 0; double ekt =0;
 
-  for(int i=0; i<2*size; i++)
+  for(int i=0; i<sortedeivals.size()/2; i++)
   {
-    ekt = sortedeivals(i)/temperature;
+    ekt = (sortedeivals(i)-mu)/temperature;
     if(!isinf(exp(-ekt))) free_energy += -temperature*log(1+exp(-ekt));
     else  free_energy += sortedeivals(i);
-    debug << free_energy << "-> ";
+    // debug << free_energy << "-> ";
   }
 
   // debug << "free_energy (-kT lnZ) = " << free_energy << endl;
@@ -147,17 +183,43 @@ double find_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma, do
   return free_energy;
 }
 
+double find_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma, ofstream& debug)
+{
+  ComplexEigenSolver <MatrixXcd> ces;
+  ces.compute(Mc);
+  VectorXd sortedeivals=sortascending(ces.eigenvalues().real());
+
+  // debug << endl;
+  // debug << "Eigenvalues :\n "<< setprecision(3) << sortedeivals.transpose() << endl;
+  // debug << "progress: " << endl;
+
+  double free_energy = 0; double ekt =0;
+
+  for(int i=0; i<sortedeivals.size()/2; i++)
+  {
+    ekt = (sortedeivals(i))/temperature;
+    if(!isinf(exp(-ekt))) free_energy += -temperature*log(1+exp(-ekt));
+    else  free_energy += sortedeivals(i);
+    // debug << free_energy << "-> ";
+  }
+
+  // debug << "free_energy (-kT lnZ) = " << free_energy << endl;
+  free_energy += U/4*randsigma.unaryExpr(&Sqr).sum();
+  // debug << "elastic cost= " << U/4*randsigma.unaryExpr(&Sqr).sum() << endl;
+  // debug << " final_free_energy= " << free_energy << endl;
+  // debug << endl;
+  return free_energy;
+}
+
+
 double find_internal_energy(MatrixXcd Mc, MatrixXd randsigma, ofstream& debug)
 {
   ComplexEigenSolver <MatrixXcd> ces;
   ces.compute(Mc);
-
-  VectorXd eivals(2*size); VectorXd sortedeivals(2*size);
-  for(int i=0; i<2*size; i++) eivals(i)= ces.eigenvalues()[i].real();
-  sortedeivals = sortascending(eivals);
+  VectorXd sortedeivals=sortascending(ces.eigenvalues().real());
 
   double internal_energy = 0;
-  for(int i=0; i<size/2; i++) internal_energy += sortedeivals(i);
+  for(int i=0; i<sortedeivals.size()/2; i++) internal_energy += sortedeivals(i);
   internal_energy += U/4*randsigma.unaryExpr(&Sqr).sum();
   return internal_energy;
 }

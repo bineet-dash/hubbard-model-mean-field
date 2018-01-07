@@ -14,7 +14,7 @@
 using namespace std;
 using namespace Eigen;
 
-void matrix_output(MatrixXcf Mc, MatrixXcf Mcx, MatrixXcf Mcy, MatrixXcf Mcz)
+void matrix_output(MatrixXcd Mc, MatrixXcd Mcx, MatrixXcd Mcy, MatrixXcd Mcz)
 {
   cout << setprecision(3) <<  Mc << endl << endl << Mcx << endl << endl << Mcy << endl << endl << Mcz << endl << endl;
 }

@@ -59,10 +59,10 @@ void construct_h0(MatrixXcd &Mc)
   Mc(size,size-1)= Mc(size-1,size)=0;
 }
 
-void sigma_generate(MatrixXd& randsigma, int i, long & idum)
+void sigma_generate(MatrixXd& randsigma, int i, long & idum, double T)
 {
   double radius, u, theta;
-  radius = 0.5+ran0(&idum);
+  radius = (T<0.5)? 0.5+ran0(&idum): ( min(2*T,8.0)*ran0(&idum) );
   u = 2*ran0(&idum)-1;
   theta  = 2*3.1416*ran0(&idum);
   randsigma(i,0)= radius*sqrt(1-pow(u,2))*cos(theta);
@@ -183,15 +183,11 @@ double debug_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma, o
   return free_energy;
 }
 
-double find_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma, ofstream& debug)
+double find_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma)
 {
   ComplexEigenSolver <MatrixXcd> ces;
   ces.compute(Mc);
   VectorXd sortedeivals=sortascending(ces.eigenvalues().real());
-
-  // debug << endl;
-  // debug << "Eigenvalues :\n "<< setprecision(3) << sortedeivals.transpose() << endl;
-  // debug << "progress: " << endl;
 
   double free_energy = 0; double ekt =0;
 
@@ -200,14 +196,9 @@ double find_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma, of
     ekt = (sortedeivals(i))/temperature;
     if(!isinf(exp(-ekt))) free_energy += -temperature*log(1+exp(-ekt));
     else  free_energy += sortedeivals(i);
-    // debug << free_energy << "-> ";
   }
 
-  // debug << "free_energy (-kT lnZ) = " << free_energy << endl;
   free_energy += U/4*randsigma.unaryExpr(&Sqr).sum();
-  // debug << "elastic cost= " << U/4*randsigma.unaryExpr(&Sqr).sum() << endl;
-  // debug << " final_free_energy= " << free_energy << endl;
-  // debug << endl;
   return free_energy;
 }
 

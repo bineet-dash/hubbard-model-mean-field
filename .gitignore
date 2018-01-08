@@ -1,6 +1,7 @@
 *
 !*.cpp
 !*.h
+!*.hpp
 !*.md
 !.gitignore
 test*

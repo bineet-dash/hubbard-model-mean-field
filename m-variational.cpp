@@ -1,4 +1,4 @@
-#include "spa_library.h"
+#include "spa_library.hpp"
 
 void find_dos(MatrixXcd Hamiltonian)
 {

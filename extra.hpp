@@ -1,5 +1,5 @@
-#ifndef _EXTRA_H_INCLUDED_
-#define _EXTRA_H_INCLUDED_
+#ifndef _EXTRA_HPP_INCLUDED_
+#define _EXTRA_HPP_INCLUDED_
 
 #include <fstream>
 #include <Eigen/Dense>

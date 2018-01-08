@@ -1,5 +1,5 @@
-#ifndef _SPA_LIBRARY_H_INCLUDED_
-#define _SPA_LIBRARY_H_INCLUDED_
+#ifndef _SPA_LIBRARY_HPP_INCLUDED_
+#define _SPA_LIBRARY_HPP_INCLUDED_
 
 #include <iostream>
 #include <cmath>
@@ -10,7 +10,7 @@
 #include <string>
 #include <chrono>
 #include <lapacke.h>
-#include "common_globals.h"
+#include "common_globals.hpp"
 
 using namespace std;
 using namespace Eigen;

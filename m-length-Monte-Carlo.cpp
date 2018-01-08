@@ -1,5 +1,5 @@
-#include "spa_library.h"   //contains the functions for main program.
-#include "extra.h"
+#include "spa_library.hpp"   //contains the functions for main program.
+#include "extra.hpp"
 
 using namespace std;
 using namespace Eigen;

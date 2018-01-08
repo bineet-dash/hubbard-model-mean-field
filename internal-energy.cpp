@@ -1,5 +1,5 @@
-#include "spa_library.h"   //contains the functions for main program.
-#include "extra.h"    //contains debugging functions (for outputting matrices and generaing Mathematica scripts)
+#include "spa_library.hpp"   //contains the functions for main program.
+#include "extra.hpp"    //contains debugging functions (for outputting matrices and generaing Mathematica scripts)
 
 int main(int argc, char* argv[])
 {

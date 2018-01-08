@@ -94,21 +94,19 @@ void progress_percent_asc(double initial_temp, double final_temp, double tempera
    }
 }
 
-void spinarrangement_Mathematica_output(MatrixXd M)
+void spinarrangement_Mathematica_output(MatrixXd M, ofstream& fout)
 {
-  string notebookname; generate_scriptname(notebookname);
-  ofstream fout(notebookname);
-  double a;
-  cout << "Enter lattice separation (a): ";
-  cin >> a;
+  double lattice_separation = 1.0;
+  // cout << "Enter lattice separation (a): ";
+  // cin >> lattice_separation;
 
   fout << "Show[Graphics3D[{" << endl;
   for(int i=0; i< M.rows(); i++)
   {
-    fout << "Arrow[{{" << a*i << ", 0, 0}, {" << M(i,0)+a*i << ","  << M(i,1) << "," << M(i,2) << "}}]";
+    fout << "Arrow[{{" << lattice_separation*i << ", 0, 0}, {" << M(i,0)+lattice_separation*i << ","  << M(i,1) << "," << M(i,2) << "}}]";
     if(i!=M.rows()-1) fout << ",\n";
   }
-  fout <<"}] ]";
+  fout <<"}] ]" << endl << endl;
 }
 
 void show_time(milliseconds begin_ms, milliseconds end_ms, string s)

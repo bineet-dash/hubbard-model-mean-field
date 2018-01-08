@@ -28,8 +28,8 @@ int main(int argc, char* argv[])
 
   construct_h0(Mc);
   long idum = time(NULL);
-  for(int i=0; i<size; i++) //randsigma(i,2) = pow(-1,i);
-   sigma_generate(randsigma, i, idum, final_temp);
+  for(int i=0; i<size; i++) //randsigma(i,2) = 5; //pow(-1,i);
+    sigma_generate(randsigma, i, idum, final_temp);
   matrixelement_sigmax(Mcx, randsigma);
   matrixelement_sigmay(Mcy, randsigma);
   matrixelement_sigmaz(Mcz, randsigma);
@@ -42,6 +42,8 @@ int main(int argc, char* argv[])
 
   string filename, latticedata;
   latticedata = "_U="+to_string(int(U))+"_size="+to_string(size);
+  filename="wolframscripts/spin_arrangement"+current_time_str()+latticedata+".nb"; ofstream outfile_spinarr(filename);
+  spinarrangement_Mathematica_output(randsigma,outfile_spinarr);
   filename="data/m_length_vs_temp"+ current_time_str()+latticedata+".txt"; ofstream outfile_mlength(filename);
   filename="data/free_energy_vs_temp"+current_time_str()+latticedata+".txt"; ofstream outfile_freeenergy(filename);
   // filename="data/mcdetails"+current_time_str()+latticedata+".txt"; ofstream outfile_mcdetails(filename);
@@ -94,7 +96,7 @@ int main(int argc, char* argv[])
       outfile_mlength << " \t" << m_length_avg/double(size) <<  endl;
       outfile_freeenergy << temperature << " " << free_energy << endl;
 
-      cout << "\rtemperature = " << temperature << " done.";
+      cout << "\rtemperature = " << temperature << " done."; cout.flush();
       // progress_percent_desc(initial_temp, final_temp, temperature);
     }
   }
@@ -102,10 +104,11 @@ int main(int argc, char* argv[])
   cout << endl;
   milliseconds end_ms = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
   show_time(begin_ms, end_ms,"MC calculation");
-  spinarrangement_Mathematica_output(randsigma);
+  spinarrangement_Mathematica_output(randsigma,outfile_spinarr);
 
   // outfile_mcdetails.close();
   outfile_mlength.close();
   outfile_freeenergy.close();
+  outfile_spinarr.close();
   return 0;
 }

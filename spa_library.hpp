@@ -56,7 +56,7 @@ void filter(VectorXd& v) {for(int i=0; i<v.size(); i++)  v(i)=filter(v(i));}
 
 bool diagonalize(MatrixXcd A, vector<double>& lambda)
 {
-  int N = A.cols(); 
+  int N = A.cols();
   int LDA = A.outerStride();
   int INFO = 0;
   double* w = new  double [N];
@@ -125,18 +125,6 @@ VectorXd sortascending(VectorXd v1)
   std::sort (stdv1.begin(), stdv1.end());
   Map<ArrayXd> sorted(stdv1.data(), stdv1.size());
   return sorted;
-}
-
-string current_time_str(void)
-{
-  time_t rawtime;
-  struct tm * timeinfo;
-  char buffer[80];
-  time (&rawtime);
-  timeinfo = localtime(&rawtime);
-  strftime(buffer,sizeof(buffer),"%S-%M-%I-%Y-%m-%d",timeinfo);
-  string str(buffer);
-  return str;
 }
 
 double get_mu(double temperature, std::vector<double> v)

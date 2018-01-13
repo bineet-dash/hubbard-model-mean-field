@@ -32,6 +32,18 @@ void generate_scriptname(string& scriptname) {
     scriptname= base+str+extension;
 }
 
+string current_time_str(void)
+{
+  time_t rawtime;
+  struct tm * timeinfo;
+  char buffer[80];
+  time (&rawtime);
+  timeinfo = localtime(&rawtime);
+  strftime(buffer,sizeof(buffer),"%S-%M-%I-%Y-%m-%d",timeinfo);
+  string str(buffer);
+  return str;
+}
+
 void eigenvalues_Mathematica(MatrixXcf Mc, ofstream& fout, string scriptname)
 {
   int size = Mc.rows()/2;

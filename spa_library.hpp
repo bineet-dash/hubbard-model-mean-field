@@ -75,38 +75,6 @@ bool diagonalize(MatrixXcd A, vector<double>& lambda)
   return INFO==0;
 }
 
-void inverse(double* A, int N)
-{
-    int *IPIV = new int[N+1];
-    int LWORK = N*N;
-    double *WORK = new double[LWORK];
-    int INFO;
-
-    dgetrf_(&N,&N,A,&N,IPIV,&INFO);
-    dgetri_(&N,A,&N,IPIV,WORK,&LWORK,&INFO);
-
-    delete IPIV;
-    delete WORK;
-}
-
-void invert(MatrixXcd A)
-{
-  int N = A.size();
-  int *IPIV = new int[N+1];
-  int LWORK = N*N;
-  __complex__ double* WORK= new __complex__ double [LWORK];
-  int INFO;
-
-  std::cerr << "/* error message */" << '\n';
-  zgetrf_(&N,&N, reinterpret_cast <__complex__ double*> (A.data()), &N,IPIV,&INFO);
-  std::cerr << "/* error message */" << '\n';
-  zgetri_(&N, reinterpret_cast <__complex__ double*> (A.data()), &N,IPIV,WORK,&LWORK,&INFO);
-  std::cerr << "/* error message */" << '\n';
-
-  delete IPIV;
-  delete WORK;
-}
-
 void construct_h0(MatrixXcd &Mc)
 {
   for(int row=0;row<2*size-1; row++) Mc(row,row+1)=Mc(row+1,row)=-t;

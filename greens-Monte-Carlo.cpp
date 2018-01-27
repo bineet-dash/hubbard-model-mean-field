@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 
   double final_temp = 10*pow(10,final_exp);
 
-  milliseconds begin_ms = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+  milliseconds begin_ms, end_ms;
 
   MatrixXcd Mc,Mcx,Mcy,Mcz;
   Mc = Mcx = Mcy = Mcz = MatrixXcd::Zero(2*size,2*size);
@@ -79,17 +79,14 @@ int main(int argc, char* argv[])
     for(double i=10; i>=1; i-=1)
     {
       double temperature = i*pow(10,j);
-   // for(double temperature = 5; temperature >=  )
       for(int sweep=0; sweep<0.75*no_sweeps; sweep++)
       {
         for(int lattice_index=0; lattice_index<size; lattice_index++)
         {
-          // sigma_generate(suggested_randsigma, lattice_index, idum, temperature);
           greens_sigma_generate(suggested_randsigma,lattice_index, idum);
-          // matrixelement_sigmax(suggested_Mcx, suggested_randsigma);
-          // matrixelement_sigmay(suggested_Mcy, suggested_randsigma);
           matrixelement_sigmaz(suggested_Mcz, suggested_randsigma);
           MatrixXcd suggested_Hamiltonian = Mc-U/2*(suggested_Mcx+suggested_Mcy+suggested_Mcz);
+
           double suggested_free_energy = filled_E(suggested_Hamiltonian);
 
           double uniform_rv = ran0(&idum); double move_prob = exp((free_energy - suggested_free_energy)/temperature);
@@ -102,7 +99,9 @@ int main(int argc, char* argv[])
           {
             suggested_randsigma=randsigma;
           }
+          exit(1);
         }
+        cout << "\r sweep = " << sweep << " done."; cout.flush();
       }
 
       double final_free_energy = 0; double count_free_energy = 0;
@@ -149,7 +148,7 @@ int main(int argc, char* argv[])
   }
 
   cout << endl;
-  milliseconds end_ms = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+  end_ms = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
   show_time(begin_ms, end_ms,"MC calculation");
   spinarrangement_Mathematica_output(randsigma,outfile_spinarr);
 

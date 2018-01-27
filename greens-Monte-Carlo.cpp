@@ -1,5 +1,6 @@
 #include "spa_library.hpp"   //contains the functions for main program.
 #include "extra.hpp"
+#include "green_library.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -13,6 +14,11 @@ void show_eigenvalues(MatrixXcd H)
   cout << endl << endl;
 }
 
+void greens_sigma_generate(MatrixXd suggested_randsigma, int lattice_index, long & idum)
+{
+  if(ran0(&idum)<=0.5) suggested_randsigma(lattice_index,2) *= -1;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -23,7 +29,7 @@ int main(int argc, char* argv[])
   // int final_exp, initial_exp;
   // cout << "Enter the number of MC sweeps, final and initial exponent: ";
   // cin >> no_sweeps >> final_exp >> initial_exp;
-  int no_sweeps = 10000;
+  int no_sweeps = 500;
   int initial_exp = -2;
   int final_exp = 0;
 
@@ -35,22 +41,25 @@ int main(int argc, char* argv[])
   Mc = Mcx = Mcy = Mcz = MatrixXcd::Zero(2*size,2*size);
   MatrixXd randsigma=MatrixXd::Zero(size,3);
 
+
   construct_h0(Mc);
   long idum = time(NULL);
-  for(int i=0; i<size; i++)  randsigma(i,2) = pow(-1,i); //randsigma(i,2) = 5;
-    //sigma_generate(randsigma, i, idum, final_temp);
-  randsigma(1,2) *= -1;
-  matrixelement_sigmax(Mcx, randsigma);
-  matrixelement_sigmay(Mcy, randsigma);
+  for(int i=0; i<size; i++)  randsigma(i,2) = 1;// pow(-1,i); //randsigma(i,2) = 5;
+
+  for(int i=0; i<size; i++)  greens_sigma_generate(randsigma, i, idum);
+
+  // matrixelement_sigmax(Mcx, randsigma);
+  // matrixelement_sigmay(Mcy, randsigma);
   matrixelement_sigmaz(Mcz, randsigma);
   MatrixXcd initial_Hamiltonian = Mc-U/2*(Mcx+Mcy+Mcz);
 
-  show_eigenvalues(initial_Hamiltonian);
-  cout << "aux field:\n"  << randsigma << endl << endl;
-  double free_energy = find_free_energy(initial_Hamiltonian, 0.0001, randsigma);
-  cout << "energy = " << free_energy << endl;
+  double free_energy = filled_E(initial_Hamiltonian);
 
-  exit(1);
+  // show_eigenvalues(initial_Hamiltonian);
+  // cout << "aux field:\n"  << randsigma << endl << endl;
+  // double free_energy = find_free_energy(initial_Hamiltonian, 0.0001, randsigma);
+  // cout << "energy = " << free_energy << endl;
+  // exit(1);
 
   MatrixXd suggested_randsigma = randsigma;
   MatrixXcd suggested_Mc,suggested_Mcx,suggested_Mcy,suggested_Mcz;
@@ -67,19 +76,21 @@ int main(int argc, char* argv[])
 
   for(int j=final_exp; j>=initial_exp; j--)
   {
-    for(double i=10; i>=1.1; i-=0.1)
+    for(double i=10; i>=1; i-=1)
     {
       double temperature = i*pow(10,j);
+   // for(double temperature = 5; temperature >=  )
       for(int sweep=0; sweep<0.75*no_sweeps; sweep++)
       {
         for(int lattice_index=0; lattice_index<size; lattice_index++)
         {
-          sigma_generate(suggested_randsigma, lattice_index, idum, temperature);
-          matrixelement_sigmax(suggested_Mcx, suggested_randsigma);
-          matrixelement_sigmay(suggested_Mcy, suggested_randsigma);
+          // sigma_generate(suggested_randsigma, lattice_index, idum, temperature);
+          greens_sigma_generate(suggested_randsigma,lattice_index, idum);
+          // matrixelement_sigmax(suggested_Mcx, suggested_randsigma);
+          // matrixelement_sigmay(suggested_Mcy, suggested_randsigma);
           matrixelement_sigmaz(suggested_Mcz, suggested_randsigma);
           MatrixXcd suggested_Hamiltonian = Mc-U/2*(suggested_Mcx+suggested_Mcy+suggested_Mcz);
-          double suggested_free_energy = find_free_energy(suggested_Hamiltonian, temperature, suggested_randsigma);
+          double suggested_free_energy = filled_E(suggested_Hamiltonian);
 
           double uniform_rv = ran0(&idum); double move_prob = exp((free_energy - suggested_free_energy)/temperature);
           if(uniform_rv <= move_prob)
@@ -99,12 +110,12 @@ int main(int argc, char* argv[])
       {
         for(int lattice_index=0; lattice_index<size; lattice_index++)
         {
-          sigma_generate(suggested_randsigma, lattice_index, idum, temperature);
+          greens_sigma_generate(suggested_randsigma,lattice_index, idum);
           matrixelement_sigmax(suggested_Mcx, suggested_randsigma);
           matrixelement_sigmay(suggested_Mcy, suggested_randsigma);
           matrixelement_sigmaz(suggested_Mcz, suggested_randsigma);
           MatrixXcd suggested_Hamiltonian = Mc-U/2*(suggested_Mcx+suggested_Mcy+suggested_Mcz);
-          double suggested_free_energy = find_free_energy(suggested_Hamiltonian, temperature, suggested_randsigma);
+          double suggested_free_energy = filled_E(suggested_Hamiltonian);
 
           double uniform_rv = ran0(&idum); double move_prob = exp((free_energy - suggested_free_energy)/temperature);
           if(uniform_rv <= move_prob)

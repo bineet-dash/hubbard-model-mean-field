@@ -14,7 +14,7 @@ void show_eigenvalues(MatrixXcd H)
   cout << endl << endl;
 }
 
-void greens_sigma_generate(MatrixXd suggested_randsigma, int lattice_index, long & idum)
+void greens_sigma_generate(MatrixXd& suggested_randsigma, int lattice_index, long & idum)
 {
   if(ran0(&idum)<=0.5) suggested_randsigma(lattice_index,2) *= -1;
 }
@@ -29,9 +29,9 @@ int main(int argc, char* argv[])
   // int final_exp, initial_exp;
   // cout << "Enter the number of MC sweeps, final and initial exponent: ";
   // cin >> no_sweeps >> final_exp >> initial_exp;
-  int no_sweeps = 500;
+  int no_sweeps = 20;
   int initial_exp = -2;
-  int final_exp = 0;
+  int final_exp = -1;
 
   double final_temp = 10*pow(10,final_exp);
 
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 
   for(int j=final_exp; j>=initial_exp; j--)
   {
-    for(double i=10; i>=1; i-=1)
+    for(double i=10; i>=2; i-=1)
     {
       double temperature = i*pow(10,j);
       for(int sweep=0; sweep<0.75*no_sweeps; sweep++)
@@ -99,7 +99,6 @@ int main(int argc, char* argv[])
           {
             suggested_randsigma=randsigma;
           }
-          exit(1);
         }
         cout << "\r sweep = " << sweep << " done."; cout.flush();
       }
@@ -127,19 +126,22 @@ int main(int argc, char* argv[])
             suggested_randsigma=randsigma;
           }
         }
-        if(sweep%50==0) {final_free_energy += free_energy; count_free_energy++;}
+        final_free_energy += free_energy; count_free_energy++;
+        // if(sweep%50==0) {}
+        cout << "\r sweep = " << sweep << " done."; cout.flush();
       }
 
       outfile_mlength << temperature << " ";
-      double m_length_avg=0;
+      // double m_length_avg=0;
       for(int j=0; j<size; j++)
       {
-        double m_length = 0;
-        for( int k=0; k<3; k++) m_length += pow(randsigma(j,k),2);
-        outfile_mlength << " " << sqrt(m_length)  << " ";
-        m_length_avg+= sqrt(m_length);
+        // double m_length = 0;
+        // for( int k=0; k<3; k++) m_length += pow(randsigma(j,k),2);
+        outfile_mlength << " " << randsigma(j,2)  << " ";
+        // m_length_avg+= sqrt(m_length);
       }
-      outfile_mlength << " \t" << m_length_avg/double(size) <<  endl;
+      outfile_mlength << endl;
+      // outfile_mlength << " \t" << m_length_avg/double(size) <<  endl;
       outfile_freeenergy << temperature << " " << final_free_energy/double(count_free_energy) << endl;
 
       cout << "\rtemperature = " << temperature << " done."; cout.flush();

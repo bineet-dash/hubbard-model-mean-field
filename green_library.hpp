@@ -75,7 +75,7 @@ double check_e(MatrixXcd H)
 
 double filled_E(MatrixXcd H)
 {
-  double step = 0.02;
+  double step = 0.04;
   double energy = 0.0;
   double no_of_electrons = 0.0;
   double omega;

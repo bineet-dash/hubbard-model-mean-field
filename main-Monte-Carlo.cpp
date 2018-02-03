@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
   // int final_exp, initial_exp;
   // cout << "Enter the number of MC sweeps, final and initial exponent: ";
   // cin >> no_sweeps >> final_exp >> initial_exp;
-  int no_sweeps = 10000;
+  int no_sweeps = 100;
   int initial_exp = -2;
   int final_exp = 0;
 
@@ -44,13 +44,7 @@ int main(int argc, char* argv[])
   matrixelement_sigmay(Mcy, randsigma);
   matrixelement_sigmaz(Mcz, randsigma);
   MatrixXcd initial_Hamiltonian = Mc-U/2*(Mcx+Mcy+Mcz);
-
-  show_eigenvalues(initial_Hamiltonian);
-  cout << "aux field:\n"  << randsigma << endl << endl;
   double free_energy = find_free_energy(initial_Hamiltonian, 0.0001, randsigma);
-  cout << "energy = " << free_energy << endl;
-
-  exit(1);
 
   MatrixXd suggested_randsigma = randsigma;
   MatrixXcd suggested_Mc,suggested_Mcx,suggested_Mcy,suggested_Mcz;

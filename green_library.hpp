@@ -73,7 +73,7 @@ double check_e(MatrixXcd H)
   exit(1);
 }
 
-double filled_E(MatrixXcd H)
+double filled_E(MatrixXcd H, int fill=size)
 {
   double step = 0.04;
   double energy = 0.0;
@@ -83,7 +83,7 @@ double filled_E(MatrixXcd H)
 
   for(omega = omega_L; omega <= omega_U; omega += step)
   {
-    if(no_of_electrons < size)
+    if(no_of_electrons < fill)
     {
       energy += omega*dos(H, omega)*step;
       no_of_electrons += dos(H, omega)*step;

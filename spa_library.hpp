@@ -189,6 +189,24 @@ double find_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma)
   return free_energy;
 }
 
+double find_canonical_free_energy(MatrixXcd Mc, double temperature, MatrixXd randsigma)
+{
+  std::vector<double> eigenvalues;
+  diagonalize(Mc, eigenvalues);
+  sort(eigenvalues.begin(),eigenvalues.end());
+
+  double free_energy = 0; double ekt =0;
+
+  for(auto it=eigenvalues.begin(); it!= eigenvalues.end(); it++)
+  {
+    ekt = (*it)/temperature;
+    if(!isinf(exp(-ekt))) free_energy += -temperature*log(1+exp(-ekt));
+    else  free_energy += (*it);
+  }
+
+  free_energy += U/4*randsigma.unaryExpr(&Sqr).sum();
+  return free_energy;
+}
 
 double find_internal_energy(MatrixXcd Mc, MatrixXd randsigma, ofstream& debug)
 {

@@ -61,14 +61,14 @@ int main(int argc, char* argv[])
           MatrixXd selected_randsigma = MatrixXd::Zero(Lc,3);
           for(int i=0; i<Lc; i++) selected_randsigma.row(i) = randsigma.row((lattice_index+i)%size);
           MatrixXcd H_cl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_randsigma);
-          double free_energy = find_canonical_free_energy(H_cl, temperature, randsigma);
-                                //filled_E(H_cl,Lc);
+          double free_energy = //find_canonical_free_energy(H_cl, temperature, randsigma);
+                                filled_E(H_cl,Lc);
 
           MatrixXd suggested_randsigma_selected = selected_randsigma;
           greens_sigma_generate(suggested_randsigma_selected,0, idum); //present lattice index is 0 in selected part
           MatrixXcd suggested_H_cl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,suggested_randsigma_selected);
-          double suggested_free_energy = find_canonical_free_energy(suggested_H_cl, temperature, randsigma);
-                                        //filled_E(suggested_H_cl,Lc);
+          double suggested_free_energy = //find_canonical_free_energy(suggested_H_cl, temperature, randsigma);
+                                        filled_E(suggested_H_cl,Lc);
 
           double uniform_rv = ran0(&idum); double move_prob = exp((free_energy - suggested_free_energy)/temperature);
           if(uniform_rv <= move_prob)
@@ -91,14 +91,14 @@ int main(int argc, char* argv[])
           MatrixXd selected_randsigma = MatrixXd::Zero(Lc,3);
           for(int i=0; i<Lc; i++) selected_randsigma.row(i) = randsigma.row((lattice_index+i)%size);
           MatrixXcd H_cl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_randsigma);
-          double free_energy = find_canonical_free_energy(H_cl, temperature, randsigma);
-                                //filled_E(H_cl,Lc);
+          double free_energy = //find_canonical_free_energy(H_cl, temperature, randsigma);
+                               filled_E(H_cl,Lc);
 
           MatrixXd suggested_randsigma_selected = selected_randsigma;
           greens_sigma_generate(suggested_randsigma_selected,0, idum); //present lattice index is 0 in selected part
           MatrixXcd suggested_H_cl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,suggested_randsigma_selected);
-          double suggested_free_energy = find_canonical_free_energy(suggested_H_cl, temperature, randsigma);
-                                        //filled_E(suggested_H_cl,Lc);
+          double suggested_free_energy =// find_canonical_free_energy(suggested_H_cl, temperature, randsigma);
+                                        filled_E(suggested_H_cl,Lc);
 
           double uniform_rv = ran0(&idum); double move_prob = exp((free_energy - suggested_free_energy)/temperature);
           if(uniform_rv <= move_prob)

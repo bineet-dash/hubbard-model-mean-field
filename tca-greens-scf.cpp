@@ -10,6 +10,11 @@ void show_eigenvalues(MatrixXcd H)
   cout << endl << endl;
 }
 
+void greens_sigma_generate(MatrixXd& suggested_randsigma, int lattice_index, long & idum)
+{
+  if(ran0(&idum)<=0.5) suggested_randsigma(lattice_index,2) *= -1;
+}
+
 int main(int argc, char* argv[])
 {
 
@@ -33,7 +38,7 @@ int main(int argc, char* argv[])
   for(int i=0; i<size; i++)  randsigma(i,2) = 1;
   for(int i=0; i<size; i++)  greens_sigma_generate(randsigma, i, idum);
 
-  int Lc = size/4;
+  int Lc = size/2;
 
   string filename, latticedata;
   latticedata = "_U="+to_string(int(U))+"_size="+to_string(size)+"_sweeps="+to_string(no_sweeps)+"_Lc="+to_string(Lc);

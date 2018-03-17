@@ -75,6 +75,14 @@ bool diagonalize(MatrixXcd A, vector<double>& lambda)
   return INFO==0;
 }
 
+VectorXd Eigenvalues(MatrixXcd A)
+{
+  std::vector<double> lambda;
+  bool ret_value = diagonalize(A,lambda);
+  Map<ArrayXd> b(lambda.data(),lambda.size());
+  return b;
+}
+
 void construct_h0(MatrixXcd &Mc)
 {
   for(int row=0;row<2*size-1; row++) Mc(row,row+1)=Mc(row+1,row)=-t;

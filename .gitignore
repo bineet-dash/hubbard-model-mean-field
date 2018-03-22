@@ -7,3 +7,5 @@
 test*
 check*
 debug*
+!data/README.md
+!wolframscripts/README.md

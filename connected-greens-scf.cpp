@@ -2,6 +2,7 @@
 #include "extra.hpp"
 
 int Lc;
+double omega_step=0.1;
 
 void show_eigenvalues(MatrixXcd H)
 {
@@ -15,47 +16,6 @@ void show_eigenvalues(MatrixXcd H)
 // {
 //   if(ran0(&idum)<=0.5) suggested_randsigma(lattice_index,2) *= -1;
 // }
-
-// MatrixXcd g_d(MatrixXcd H, double omega)
-// {
-//   MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(H.rows(),H.rows());
-//   MatrixXcd G = invert(Z-H);
-//   return G;
-// }
-
-MatrixXcd g_c_L(MatrixXcd Hl, double omega, MatrixXcd Gr)
-{
-  MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(Hl.rows(),Hl.rows());
-
-  // MatrixXcd tau = MatrixXcd::Zero(Gr.rows(),1);
-  // tau(0) = tau(Lc) = -t;
-  // cd c_part = (tau.adjoint()*(Gr*tau)).sum(); //1x1 matrix, so sum() converts to cd
-  // MatrixXcd corr = MatrixXcd::Zero(Hl.rows(),Hl.cols());
-  // corr(Lc-1,Lc-1) = corr(2*Lc-1,2*Lc-1) = c_part;
-  // cout << corr << endl << endl;
-
-  MatrixXcd tau = MatrixXcd::Zero(Gr.rows(),Gr.rows());
-  // tau(tau.rows()-1,0) = -t;
-  tau(Lc-1,0) = tau(2*Lc-1, Lc) = -t;
-  // cout << tau << endl << endl;
-  // cout << Z << endl << endl << Hl << endl << endl <<  tau*Gr*tau.adjoint() << endl;
-  // exit(1);
-  MatrixXcd G = invert(Z- Hl- tau*Gr*tau.adjoint());
-  return G;
-}
-
-MatrixXcd g_c_R(MatrixXcd Hr, double omega, MatrixXcd Gl)
-{
-  MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(Hr.rows(),Hr.rows());
-  MatrixXcd G_d_r = invert(Z-Hr); //will be used again and again.
-
-  MatrixXcd tau = MatrixXcd::Zero(Gl.rows(),Hr.cols());
-  // tau(tau.rows()-1,0) = -t;
-  tau(Lc-1,0) = tau(2*Lc-1, Lc) = -t;
-
-  MatrixXcd G = G_d_r + G_d_r*tau.adjoint()*Gl*tau*G_d_r;
-  return G;
-}
 
 
 double scf_spectral_weight(MatrixXcd G, double k, double omega)
@@ -76,80 +36,97 @@ double get_dos(MatrixXcd G, double omega)
   return DoS/size;
 }
 
-// int write_dos_count_1 = 0;
-// int write_dos_count_2 = 0;
-//
-// void write_dos(MatrixXcd H, std::vector<MatrixXcd>& v, int half)
-// {
-//   int& num = (half==1)?write_dos_count_1:write_dos_count_2;
-//   // if(half==1) num=write_dos_count_1;
-//   // else if(half==2) num=write_dos_count_2;
-//
-//   string filename = "scf/scf_greens_test_"+ to_string(half)+ "_" + to_string(num)+ ".txt";
-//   ofstream fout(filename);
-//   int count = 0;
-//
-//   for(double omega=omega_L; omega<=omega_U; omega+=0.1)
-//   {
-//     MatrixXcd Gfunc = g_c(H, omega, v.at(count), half);
-//     fout << omega << " " << get_dos(Gfunc, omega) << endl;
-//     v.at(count) = Gfunc;
-//     count++;
-//   }
-//   fout.close();
-//   num++;
-// }
-
 int num_L = 0;
 int num_R = 0;
+double diff = 0;
 
-void write_L_dos(MatrixXcd H, std::vector<MatrixXcd> G_r_list, std::vector<MatrixXcd>& G_l_list)
+MatrixXcd g_c_L(MatrixXcd Hl, double omega, MatrixXcd Gr)
+{
+  MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(Hl.rows(),Hl.rows());
+  MatrixXcd tau = MatrixXcd::Zero(Hl.rows(),Gr.cols());
+  tau(Lc-1,0) = tau(2*Lc-1, Lc) = 0.5*t;
+  // cout << Hl << endl << endl;
+  // exit(1);
+  MatrixXcd G = invert(Z- Hl- tau*Gr*tau.adjoint());
+  return G;
+}
+
+bool write_L_dos(MatrixXcd H, vector<MatrixXcd> Gr_list, vector<MatrixXcd>& Gl_list, VectorXd& last_dos)
 {
   string filename = "scf/scf_greens_test_L_" + to_string(num_L)+ ".txt";
   ofstream fout(filename);
   int count = 0;
+  VectorXd new_dos = VectorXd::Zero(last_dos.size());
 
-  for(double omega=omega_L; omega<=omega_U; omega+=0.1)
+  for(double omega=omega_L; omega<=omega_U; omega += omega_step)
   {
-    MatrixXcd Gfunc = g_c_L(H, omega, G_r_list.at(count));
-    fout << omega << " " << get_dos(Gfunc, omega) << endl;
-    G_l_list.at(count) = Gfunc;
+    MatrixXcd Gfunc = g_c_L(H, omega, Gr_list.at(count));
+    Gl_list.at(count) = Gfunc;
+    new_dos(count) = get_dos(Gfunc, omega);
+    fout << omega << " " << new_dos(count) << endl;
     count++;
   }
   fout.close();
   num_L++;
+
+  diff = ((new_dos-last_dos).cwiseAbs()).maxCoeff();
+  if(diff < 0.05 )
+    return false;
+  else {
+    last_dos = new_dos;
+    return true;
+  }
+
 }
 
-void write_R_dos(MatrixXcd H, std::vector<MatrixXcd> G_l_list, std::vector<MatrixXcd>& G_r_list)
+MatrixXcd g_c_R(MatrixXcd Hr, double omega, MatrixXcd Gl)
+{
+  MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(Hr.rows(),Hr.rows());
+
+  MatrixXcd tau = MatrixXcd::Zero(Gl.rows(),Hr.cols());
+  tau(Lc-1,0) = tau(2*Lc-1, Lc) = 0.5*t;
+  // cout << Hr << endl << endl;
+  // exit(1);
+
+  MatrixXcd G_d_r = invert(Z-Hr); //will be used again and again.
+  MatrixXcd G = G_d_r + G_d_r*tau.adjoint()*Gl*tau*G_d_r;
+  return G;
+}
+
+
+void write_R_dos(MatrixXcd H, std::vector<MatrixXcd> Gl_list_old, std::vector<MatrixXcd>& Gr_list)
 {
   string filename = "scf/scf_greens_test_R_" + to_string(num_R)+ ".txt";
   ofstream fout(filename);
   int count = 0;
 
-  for(double omega=omega_L; omega<=omega_U; omega+=0.1)
+  for(double omega=omega_L; omega<=omega_U; omega+=omega_step)
   {
-    MatrixXcd Gfunc = g_c_R(H, omega, G_l_list.at(count));
+    MatrixXcd Gfunc = g_c_R(H, omega, Gl_list_old.at(count));
     fout << omega << " " << get_dos(Gfunc, omega) << endl;
-    G_r_list.at(count) = Gfunc;
+    Gr_list.at(count) = Gfunc;
     count++;
   }
+
   fout.close();
   num_R++;
 }
 
 int main(int argc, char* argv[])
 {
-
   cout << "Enter the size, U: ";
   cin >> size >> U;
   Lc = size/2;
 
   std::vector<MatrixXcd> Gr_list;
   std::vector<MatrixXcd> Gl_list;
+  std::vector<MatrixXcd> Gl_list_old;
+
   for(double omega=omega_L; omega<=omega_U; omega+=0.1)
   {
     Gr_list.push_back(MatrixXcd::Zero(2*Lc,2*Lc));
     Gl_list.push_back(MatrixXcd::Zero(2*Lc,2*Lc));
+    Gl_list_old.push_back(MatrixXcd::Zero(2*Lc,2*Lc));
   }
 
   MatrixXd randsigma = MatrixXd::Zero(size, 3);
@@ -161,28 +138,35 @@ int main(int argc, char* argv[])
   MatrixXd selected_randsigma = MatrixXd::Zero(Lc,3);
 
   int lattice_index = 0;
+  VectorXd last_dos = VectorXd::Zero((omega_U-omega_L)/omega_step+1);
+
   for(int i=0; i<Lc; i++) selected_randsigma.row(i) = randsigma.row((lattice_index+i)%size);
   MatrixXcd H_cl_1 = cluster_h0(Lc,0)-U/2*cluster_sigmaz(Lc,selected_randsigma);
-
-  // cout << randsigma.transpose() << endl << endl << selected_randsigma.transpose() << endl << endl;
-  // cout << H_cl_1 << endl << endl; exit(11);
-
   lattice_index += Lc;
   for(int i=0; i<Lc; i++) selected_randsigma.row(i) = randsigma.row((lattice_index+i)%size);
-  MatrixXcd H_cl_2 = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_randsigma);
+  MatrixXcd H_cl_2 = cluster_h0(Lc,0)-U/2*cluster_sigmaz(Lc,selected_randsigma);
 
+  // cout << H_cl_1 << endl << endl << H_cl_2 << endl << endl;
+  // exit(1);
 
+  begin_ms = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
 
   for(int master_loop=0; master_loop<50; master_loop++)
   {
-    std::cerr << "master_loop=" << master_loop << '\n';
-    write_L_dos(H_cl_1, Gr_list, Gl_list);
-    std::cerr << "H_cl_1 complete" << '\n';
-    write_R_dos(H_cl_2, Gl_list, Gr_list);
-    std::cerr << "H_cl_2 complete" << '\n';
+    // std::cerr << "master_loop=" << master_loop << '\n';
+    if(write_L_dos(H_cl_1, Gr_list, Gl_list, last_dos)) {
+      write_R_dos(H_cl_2, Gl_list_old, Gr_list);
+      Gl_list_old = Gl_list;
+      // std::cerr << "diff = " << diff << '\n';
+    }
+    else {
+      cout << "converged after " << master_loop << " loops. \n";
+      break;
+    }
   }
 
-  exit(1943);
+  end_ms = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+  cout << endl << (end_ms.count()-begin_ms.count()) << endl;
 
   // int no_sweeps = 20;
   // int initial_exp = -2;

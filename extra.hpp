@@ -14,6 +14,14 @@
 using namespace std;
 using namespace Eigen;
 
+void show_eigenvalues(MatrixXcd H)
+{
+  std::vector<double> eigenvalues;
+  diagonalize(H, eigenvalues);
+  for(auto it=eigenvalues.begin(); it!= eigenvalues.end(); it++) cout << *it << " ";
+  cout << endl << endl;
+}
+
 void matrix_output(MatrixXcd Mc, MatrixXcd Mcx, MatrixXcd Mcy, MatrixXcd Mcz)
 {
   cout << setprecision(3) <<  Mc << endl << endl << Mcx << endl << endl << Mcy << endl << endl << Mcz << endl << endl;

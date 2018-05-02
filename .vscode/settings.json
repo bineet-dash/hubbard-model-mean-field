@@ -12,5 +12,6 @@
     "limits": "cpp",
     "ostream": "cpp",
     "*.ipp": "cpp"
-  }
+  },
+  "editor.minimap.enabled": false
 }

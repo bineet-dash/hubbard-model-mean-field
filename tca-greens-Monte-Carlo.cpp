@@ -1,15 +1,6 @@
 #include "tca_library.hpp"
 #include "extra.hpp"
 
-
-void show_eigenvalues(MatrixXcd H)
-{
-  std::vector<double> eigenvalues;
-  diagonalize(H, eigenvalues);
-  for(auto it=eigenvalues.begin(); it!= eigenvalues.end(); it++) cout << *it << " ";
-  cout << endl << endl;
-}
-
 int main(int argc, char* argv[])
 {
 

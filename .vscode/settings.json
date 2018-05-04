@@ -11,7 +11,9 @@
     "chrono": "cpp",
     "limits": "cpp",
     "ostream": "cpp",
-    "*.ipp": "cpp"
+    "*.ipp": "cpp",
+    "iostream": "cpp",
+    "iosfwd": "cpp"
   },
   "editor.minimap.enabled": false
 }

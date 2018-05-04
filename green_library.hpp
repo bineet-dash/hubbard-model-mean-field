@@ -154,7 +154,7 @@ MatrixXd select_block(MatrixXd m, int li, int p)
   }
 }
 
-double filled_E_ed(MatrixXd rs, double temperature, int li, int Lc) //li ~ lattice_index
+double filled_E_ed_connected(MatrixXd rs, double temperature, int li, int Lc) //li ~ lattice_index
 {
   // double step = 0.04;
   // double energy = 0.0;
@@ -192,7 +192,86 @@ double filled_E_ed(MatrixXd rs, double temperature, int li, int Lc) //li ~ latti
   return free_energy;
 }
 
-double filled_E_disconnected(MatrixXd rs, int li, int Lc, MatrixXd& dos_l, MatrixXd& dos_r) //li ~ lattice_index
+double filled_E_ed_disconnected(MatrixXd rs, double temperature, int li, int Lc) //li ~ lattice_index
+{
+
+  MatrixXd selected_rs_l = select_block(rs,li,Lc);
+  MatrixXcd Hl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_l);
+
+  double free_energy = find_canonical_free_energy(Hl,temperature,rs);
+  return free_energy;
+}
+
+double filled_E_disconnected(MatrixXd rs, int li, int Lc) //li ~ lattice_index
+{
+  double step = 0.01;
+  double energy = 0.0;
+  double no_of_electrons = 0.0;
+  double omega;
+
+  MatrixXd selected_rs_l = select_block(rs,li,Lc);
+  MatrixXd selected_rs_r = select_block(rs, (li+Lc)%size, Lc);
+  MatrixXcd Hl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_l);
+  MatrixXcd Hr = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_r);
+
+  for(omega = omega_L; omega <= omega_U; omega += step)
+  {
+    double energy = 0.0;
+    double no_of_electrons = 0.0;
+  
+    if(no_of_electrons < Lc)
+    {
+      MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(Hl.rows(),Hl.rows());
+      MatrixXcd tau = MatrixXcd::Zero(Hl.rows(),Hr.cols());
+      tau(Lc-1,0) = tau(2*Lc-1, Lc) = -t;
+      tau(0,Lc-1) = tau(Lc, 2*Lc-1) = -t; //outer PBC
+      MatrixXcd Gl = invert(Z-Hl);
+
+      double N_wl = -1/M_PI*Gl.trace().imag();
+      energy += omega*N_wl*step;
+      no_of_electrons += N_wl*step;
+    }
+    else break;
+  }
+  return energy;
+}
+
+
+double filled_E_connected(MatrixXd rs, int li, int Lc) //li ~ lattice_index
+{
+  double step = 0.01;
+  double energy = 0.0;
+  double no_of_electrons = 0.0;
+  double omega;
+
+  MatrixXd selected_rs_l = select_block(rs,li,Lc);
+  MatrixXd selected_rs_r = select_block(rs, (li+Lc)%size, Lc);
+  MatrixXcd Hl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_l);
+  MatrixXcd Hr = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_r);
+
+  for(omega = omega_L; omega <= omega_U; omega += step)
+  {
+    double energy = 0.0;
+    double no_of_electrons = 0.0;
+  
+    if(no_of_electrons < Lc)
+    {
+      MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(Hl.rows(),Hl.rows());
+      MatrixXcd tau = MatrixXcd::Zero(Hl.rows(),Hr.cols());
+      tau(Lc-1,0) = tau(2*Lc-1, Lc) = -t;
+      tau(0,Lc-1) = tau(Lc, 2*Lc-1) = -t; //outer PBC
+      MatrixXcd Gl = invert(Z-Hl-tau*invert(Z-Hr)*tau.adjoint());
+
+      double N_wl = -1/M_PI*Gl.trace().imag();
+      energy += omega*N_wl*step;
+      no_of_electrons += N_wl*step;
+    }
+    else break;
+  }
+  return energy;
+}
+
+double dos_and_filled_E_disconnected(MatrixXd rs, int li, int Lc, MatrixXd& dos_l, MatrixXd& dos_r) //li ~ lattice_index
 {
   double step = 0.02;
   double energy = 0.0;
@@ -238,7 +317,7 @@ double filled_E_disconnected(MatrixXd rs, int li, int Lc, MatrixXd& dos_l, Matri
     return energy;
 }
 
-double filled_E_connected(MatrixXd rs, int li, int Lc, MatrixXd& dos_l, MatrixXd& dos_r) //li ~ lattice_index
+double dos_and_filled_E_connected(MatrixXd rs, int li, int Lc, MatrixXd& dos_l, MatrixXd& dos_r) //li ~ lattice_index
 {
   double step = 0.04;
   double energy = 0.0;

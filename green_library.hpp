@@ -40,8 +40,6 @@ void greens_sigma_generate(MatrixXd& suggested_randsigma, int lattice_index, lon
   if(ran0(&idum)<=0.5) suggested_randsigma(lattice_index,2) *= -1;
 }
 
-
-
 MatrixXcd invert(MatrixXcd A)
 {
   int N = A.rows();
@@ -76,23 +74,31 @@ MatrixXcd invert(MatrixXcd A)
 //   else {cout << "Inversion failed. Exiting..."; exit(28);}
 // }
 
-double spectral_weight(MatrixXcd H, double k, double omega)
-{
-  MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(H.rows(),H.rows());
-  MatrixXcd G = invert(Z-H);
-  double weight = G.trace().imag();
-  return -1/M_PI*weight;
-}
+// double spectral_weight(MatrixXcd H, double k, double omega)
+// {
+//   MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(H.rows(),H.rows());
+//   MatrixXcd G = invert(Z-H);
+//   double weight = G.trace().imag();
+//   return -1/M_PI*weight;
+// }
+
+// double dos(MatrixXcd H, double omega)
+// {
+//   double DoS = 0;
+//   for(int n=0; n<size; n++)
+//   {
+//     double k = n*M_PI/(size*a);// -M_PI/a ;
+//     DoS += spectral_weight(H, k, omega);
+//   }
+//   return DoS/size;
+// }
 
 double dos(MatrixXcd H, double omega)
 {
-  double DoS = 0;
-  for(int n=0; n<size; n++)
-  {
-    double k = n*M_PI/(size*a);// -M_PI/a ;
-    DoS += spectral_weight(H, k, omega);
-  }
-  return DoS/size;
+  MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(H.rows(),H.rows());
+  MatrixXcd G = invert(Z-H);
+  double DoS = -1/M_PI*G.trace().imag();
+  return DoS;
 }
 
 double mu(MatrixXcd H)
@@ -202,72 +208,96 @@ double filled_E_ed_disconnected(MatrixXd rs, double temperature, int li, int Lc)
   return free_energy;
 }
 
-double filled_E_disconnected(MatrixXd rs, int li, int Lc) //li ~ lattice_index
-{
-  double step = 0.01;
-  double energy = 0.0;
-  double no_of_electrons = 0.0;
-  double omega;
 
+double get_mu_gf(vector <double> a_w, double dw, double temperature, int fill)
+{
+  double lb = omega_L;
+  double ub = omega_U;
+  double mu, ne; 
+  // int loop=0;
+  do
+    {
+      ne = 0.0;
+      mu = (lb+ub)/2;
+
+      // if(loop > 10) exit(1812);
+      // cout << "lb=" << lb << " ub=" << ub  << " mu=" << mu;
+
+      for(auto it=a_w.begin(); it!=a_w.end(); it++) ne += (*it)*dw/(exp((*it-mu)/temperature)+1);
+      if(ne<fill) lb = mu;
+      else if(ne > fill) ub = mu;
+
+      // loop++;
+      // cout << " ne=" << ne << endl;
+    }
+  while(abs(ne-fill)>0.001);
+  return mu;
+}
+
+double get_mu_gf(MatrixXcd H, double temperature, int fill)
+{
+  vector <double> a_w;
+  double omega_step = 0.02;
+  for(double omega=omega_L; omega<omega_U; omega+= omega_step) a_w.push_back(dos(H,omega));
+  return get_mu_gf(a_w, omega_step, temperature, fill);
+}
+
+double filled_E_disconnected(MatrixXd rs, int li, int Lc, double temperature) //li ~ lattice_index
+{
   MatrixXd selected_rs_l = select_block(rs,li,Lc);
   MatrixXd selected_rs_r = select_block(rs, (li+Lc)%size, Lc);
   MatrixXcd Hl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_l);
   MatrixXcd Hr = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_r);
-
-  for(omega = omega_L; omega <= omega_U; omega += step)
-  {
-    double energy = 0.0;
-    double no_of_electrons = 0.0;
   
-    if(no_of_electrons < Lc)
-    {
-      MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(Hl.rows(),Hl.rows());
-      MatrixXcd tau = MatrixXcd::Zero(Hl.rows(),Hr.cols());
-      tau(Lc-1,0) = tau(2*Lc-1, Lc) = -t;
-      tau(0,Lc-1) = tau(Lc, 2*Lc-1) = -t; //outer PBC
-      MatrixXcd Gl = invert(Z-Hl);
+  MatrixXcd tau = MatrixXcd::Zero(Hl.rows(),Hr.cols());
+  tau(Lc-1,0) = tau(2*Lc-1, Lc) = -t;
+  tau(0,Lc-1) = tau(Lc, 2*Lc-1) = -t; //outer PBC
 
-      double N_wl = -1/M_PI*Gl.trace().imag();
-      energy += omega*N_wl*step;
-      no_of_electrons += N_wl*step;
-    }
-    else break;
+  vector <double> a_w;
+  vector <double> omega_arr;
+  double step = 0.01;
+  for(double omega = omega_L; omega <= omega_U; omega += step) omega_arr.push_back(omega);
+
+  for(auto it=omega_arr.begin(); it!=omega_arr.end(); it++)
+  {  
+    MatrixXcd Z = cd(*it,eta)*MatrixXcd::Identity(Hl.rows(),Hl.rows());
+    MatrixXcd Gl = invert(Z-Hl);
+    a_w.push_back(-1/M_PI*Gl.trace().imag());
   }
+  double mu = get_mu_gf(a_w,step, temperature,Lc);
+  double energy = 0.0;
+  for(int i=0; i<omega_arr.size(); i++) energy += omega_arr.at(i)*a_w.at(i)/(exp(omega_arr.at(i)-mu)/temperature+1) ;
+  // cout << "temperature = " << temperature << ", mu = " << mu << endl;
   return energy;
 }
 
 
-double filled_E_connected(MatrixXd rs, int li, int Lc) //li ~ lattice_index
+double filled_E_connected(MatrixXd rs, int li, int Lc, double temperature) //li ~ lattice_index
 {
-  double step = 0.01;
-  double energy = 0.0;
-  double no_of_electrons = 0.0;
-  double omega;
-
   MatrixXd selected_rs_l = select_block(rs,li,Lc);
   MatrixXd selected_rs_r = select_block(rs, (li+Lc)%size, Lc);
   MatrixXcd Hl = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_l);
   MatrixXcd Hr = cluster_h0(Lc)-U/2*cluster_sigmaz(Lc,selected_rs_r);
-
-  for(omega = omega_L; omega <= omega_U; omega += step)
-  {
-    double energy = 0.0;
-    double no_of_electrons = 0.0;
   
-    if(no_of_electrons < Lc)
-    {
-      MatrixXcd Z = cd(omega,eta)*MatrixXcd::Identity(Hl.rows(),Hl.rows());
-      MatrixXcd tau = MatrixXcd::Zero(Hl.rows(),Hr.cols());
-      tau(Lc-1,0) = tau(2*Lc-1, Lc) = -t;
-      tau(0,Lc-1) = tau(Lc, 2*Lc-1) = -t; //outer PBC
-      MatrixXcd Gl = invert(Z-Hl-tau*invert(Z-Hr)*tau.adjoint());
+  MatrixXcd tau = MatrixXcd::Zero(Hl.rows(),Hr.cols());
+  tau(Lc-1,0) = tau(2*Lc-1, Lc) = -t;
+  tau(0,Lc-1) = tau(Lc, 2*Lc-1) = -t; //outer PBC
 
-      double N_wl = -1/M_PI*Gl.trace().imag();
-      energy += omega*N_wl*step;
-      no_of_electrons += N_wl*step;
-    }
-    else break;
+  vector <double> a_w;
+  vector <double> omega_arr;
+  double step = 0.01;
+  for(double omega = omega_L; omega <= omega_U; omega += step) omega_arr.push_back(omega);
+
+  for(auto it=omega_arr.begin(); it!=omega_arr.end(); it++)
+  {  
+    MatrixXcd Z = cd(*it,eta)*MatrixXcd::Identity(Hl.rows(),Hl.rows());
+    MatrixXcd Gl = invert(Z-Hl-tau*invert(Z-Hr)*tau.adjoint());
+    a_w.push_back(-1/M_PI*Gl.trace().imag());
   }
+  double mu = get_mu_gf(a_w,step, temperature,Lc);
+  double energy = 0.0;
+  for(int i=0; i<omega_arr.size(); i++) energy += omega_arr.at(i)*a_w.at(i)/(exp(omega_arr.at(i)-mu)/temperature+1) ;
+  // cout << "temperature = " << temperature << ", mu = " << mu << endl;
   return energy;
 }
 

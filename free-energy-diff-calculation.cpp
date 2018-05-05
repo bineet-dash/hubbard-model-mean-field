@@ -39,32 +39,30 @@ int main(int argc, char* argv[])
       double final_free_energy = 0;
       double temperature = i*pow(10,j);
 
-      // for(int lattice_index=0; lattice_index<size; lattice_index++)
-      // {
+      // // for(int lattice_index=0; lattice_index<size; lattice_index++)
+      // // {
         int lattice_index = 2;
 
         // cout << randsigma.col(2).transpose() << endl;
+        MatrixXd suggested_randsigma = randsigma;
+        suggested_randsigma(lattice_index,2) *= -1; //flip the field moment
+        // cout << suggested_randsigma.col(2).transpose() << endl;
 
         VectorXd free_energy_arr = VectorXd::Zero(4);
         free_energy_arr << filled_E_ed_disconnected(randsigma,temperature,lattice_index,Lc),
                            filled_E_ed_connected(randsigma,temperature,lattice_index,Lc),
-                           filled_E_disconnected(randsigma, lattice_index, Lc),
-                           filled_E_connected(randsigma, lattice_index, Lc);
+                           filled_E_disconnected(randsigma, lattice_index, Lc, temperature),
+                           filled_E_connected(randsigma, lattice_index, Lc, temperature);
 
-        MatrixXd suggested_randsigma = randsigma;
-        suggested_randsigma(lattice_index,2) *= -1; //flip the field moment
-        // cout << suggested_randsigma.col(2).transpose() << endl;
-    
         VectorXd changed_free_energy_arr = VectorXd::Zero(4);
         changed_free_energy_arr << filled_E_ed_disconnected(suggested_randsigma,temperature,lattice_index,Lc),
                                   filled_E_ed_connected(suggested_randsigma,temperature,lattice_index,Lc),
-                                  filled_E_disconnected(suggested_randsigma, lattice_index, Lc),
-                                  filled_E_connected(suggested_randsigma, lattice_index, Lc);
+                                  filled_E_disconnected(suggested_randsigma, lattice_index, Lc, temperature),
+                                  filled_E_connected(suggested_randsigma, lattice_index, Lc, temperature);
 
         VectorXd diff_free_energy_arr = changed_free_energy_arr - free_energy_arr;
       // }      
-
-        // exit(12);
+     
       outfile_freeenergy << temperature << " " << diff_free_energy_arr.transpose() << endl;
       cout << "\rtemperature = " << temperature << " done."; cout.flush();
     }
